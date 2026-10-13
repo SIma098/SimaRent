@@ -1,0 +1,159 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+
+  <head>
+    <title>{% block title %}SimaRent{% endblock %}</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{% static 'carrentals/fonts/icomoon/style.css' %}">
+
+    <link rel="stylesheet" href="{% static 'carrentals/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'carrentals/css/bootstrap-datepicker.css' %}">
+    <link rel="stylesheet" href="{% static 'carrentals/css/jquery.fancybox.min.css' %}">
+    <link rel="stylesheet" href="{% static 'carrentals/css/owl.carousel.min.css' %}">
+    <link rel="stylesheet" href="{% static 'carrentals/css/owl.theme.default.min.css' %}">
+    <link rel="stylesheet" href="{% static 'carrentals/fonts/flaticon/font/flaticon.css' %}">
+    <link rel="stylesheet" href="{% static 'carrentals/css/aos.css' %}">
+
+    <!-- MAIN CSS -->
+    <link rel="stylesheet" href="{% static 'carrentals/css/style.css' %}">
+
+  </head>
+
+  <body>
+
+    
+    <div class="site-wrap" id="home-section">
+
+      <div class="site-mobile-menu site-navbar-target">
+        <div class="site-mobile-menu-header">
+          <div class="site-mobile-menu-close mt-3">
+            <span class="icon-close2 js-menu-toggle"></span>
+          </div>
+        </div>
+        <div class="site-mobile-menu-body"></div>
+      </div>
+
+
+
+      <header class="site-navbar site-navbar-target" role="banner">
+
+        <div class="container">
+          <div class="row align-items-center position-relative">
+
+            <div class="col-3">
+              <div class="site-logo">
+                <a href="{% url 'cars:home' %}"><strong>SimaRent</strong></a>
+              </div>
+            </div>
+
+            <div class="col-9  text-right">
+              
+              <span class="d-inline-block d-lg-none"><a href="#" class=" site-menu-toggle js-menu-toggle py-5 "><span class="icon-menu h3 text-black"></span></a></span>
+
+              <nav class="site-navigation text-right ml-auto d-none d-lg-block" role="navigation">
+                <ul class="site-menu main-menu js-clone-nav ml-auto ">
+                  <li class="active"><a href="{% url 'cars:home' %}" class="nav-link">Главная</a></li>
+                  <li><a href="{% url 'cars:listing' %}" class="nav-link">Автомобили</a></li>
+                  <li><a href="{% url 'cars:about' %}" class="nav-link">О компании</a></li>
+                  <li><a href="{% url 'cars:contact' %}" class="nav-link">Контакты</a></li>
+                </ul>
+              </nav>
+            </div>
+
+            
+          </div>
+        </div>
+
+      </header>
+
+{% block content %}{% endblock %}
+
+      <footer class="site-footer">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-3">
+              <h2 class="footer-heading mb-4">О компании</h2>
+              <p>SimaRent — аренда автомобилей в трёх городах России. Собственный автопарк, выдача и возврат в любом офисе сети.</p>
+              <ul class="list-unstyled social">
+                <li><a href="#" title="Telegram"><span class="icon-telegram"></span></a></li>
+                <li><a href="#" title="ВКонтакте"><span class="icon-vk"></span></a></li>
+                <li><a href="#" title="MAX"><span class="icon-message"></span></a></li>
+                <li><a href="#" title="Одноклассники"><span class="icon-odnoklassniki"></span></a></li>
+              </ul>
+            </div>
+            <div class="col-lg-8 ml-auto">
+              <div class="row">
+                <div class="col-lg-3">
+                  <h2 class="footer-heading mb-4">Навигация</h2>
+                  <ul class="list-unstyled">
+                    <li><a href="{% url 'cars:home' %}">Главная</a></li>
+                    <li><a href="{% url 'cars:listing' %}">Автомобили</a></li>
+                    <li><a href="{% url 'cars:about' %}">О компании</a></li>
+                    <li><a href="{% url 'cars:contact' %}">Контакты</a></li>
+                  </ul>
+                </div>
+                <div class="col-lg-3">
+                  <h2 class="footer-heading mb-4">Аренда</h2>
+                  <ul class="list-unstyled">
+                    <li><a href="{% url 'cars:listing' %}">Эконом</a></li>
+                    <li><a href="{% url 'cars:listing' %}">Комфорт</a></li>
+                    <li><a href="{% url 'cars:listing' %}">Бизнес</a></li>
+                    <li><a href="{% url 'cars:listing' %}">Спорт</a></li>
+                  </ul>
+                </div>
+                <div class="col-lg-3">
+                  <h2 class="footer-heading mb-4">Клиентам</h2>
+                  <ul class="list-unstyled">
+                    <li><a href="#">Условия аренды</a></li>
+                    <li><a href="#">Документы</a></li>
+                    <li><a href="#">Страховка</a></li>
+                    <li><a href="#">Вопросы и ответы</a></li>
+                  </ul>
+                </div>
+                <div class="col-lg-3">
+                  <h2 class="footer-heading mb-4">Офисы</h2>
+                  <ul class="list-unstyled">
+                    <li><a href="#">Москва</a></li>
+                    <li><a href="#">Санкт-Петербург</a></li>
+                    <li><a href="#">Волгоград</a></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row pt-5 mt-5 text-center">
+            <div class="col-md-12">
+              <div class="border-top pt-5">
+                <p>&copy; <script>document.write(new Date().getFullYear());</script> SimaRent. Учебный проект.</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </footer>
+
+    <script src="{% static 'carrentals/js/jquery-3.3.1.min.js' %}"></script>
+    <script src="{% static 'carrentals/js/popper.min.js' %}"></script>
+    <script src="{% static 'carrentals/js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'carrentals/js/owl.carousel.min.js' %}"></script>
+    <script src="{% static 'carrentals/js/jquery.sticky.js' %}"></script>
+    <script src="{% static 'carrentals/js/jquery.waypoints.min.js' %}"></script>
+    <script src="{% static 'carrentals/js/jquery.animateNumber.min.js' %}"></script>
+    <script src="{% static 'carrentals/js/jquery.fancybox.min.js' %}"></script>
+    <script src="{% static 'carrentals/js/jquery.easing.1.3.js' %}"></script>
+    <script src="{% static 'carrentals/js/bootstrap-datepicker.min.js' %}"></script>
+    <script src="{% static 'carrentals/js/aos.js' %}"></script>
+
+    <script src="{% static 'carrentals/js/main.js' %}"></script>
+
+    {% block extra_js %}{% endblock %}
+
+  </body>
+
+</html>
+

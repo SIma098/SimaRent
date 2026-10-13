@@ -1,0 +1,262 @@
+{% extends "cars/base.html" %}
+{% load static %}
+
+{% block title %}SimaRent — аренда автомобилей{% endblock %}
+
+{% block content %}
+
+  <!-- Шапка с формой подбора. Поля формы повторяют поля таблицы bookings:
+       pickup_office_id, date_start, date_end, плюс фильтр по classes -->
+  <div class="hero" style="background-image: url('{% static "carrentals/images/hero_1_a.jpg" %}');">
+    <div class="container">
+      <div class="row align-items-center justify-content-center">
+        <div class="col-lg-10">
+
+          <div class="row mb-5">
+            <div class="col-lg-8 intro">
+              <h1><strong>Аренда автомобиля</strong> в {{ cities_total }} городах России.</h1>
+              <p class="lead text-white mb-0">
+                Автопарк из {{ cars_total }} машин, {{ offices_total }} офисов выдачи.
+                Берите машину там, где удобно, возвращайте в любой другой офис.
+              </p>
+            </div>
+          </div>
+
+          <form class="trip-form">
+            <div class="row align-items-center">
+
+              <div class="mb-3 mb-md-0 col-md-3">
+                <select name="city" class="custom-select form-control">
+                  <option value="">Город получения</option>
+                  {% for city in cities %}
+                    <option value="{{ city.code }}">{{ city.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="mb-3 mb-md-0 col-md-3">
+                <div class="form-control-wrap">
+                  <input type="text" name="date_start" placeholder="Дата начала"
+                         class="form-control datepicker px-3">
+                  <span class="icon icon-date_range"></span>
+                </div>
+              </div>
+
+              <div class="mb-3 mb-md-0 col-md-3">
+                <div class="form-control-wrap">
+                  <input type="text" name="date_end" placeholder="Дата возврата"
+                         class="form-control datepicker px-3">
+                  <span class="icon icon-date_range"></span>
+                </div>
+              </div>
+
+              <div class="mb-3 mb-md-0 col-md-3">
+                <input type="submit" value="Подобрать" class="btn btn-primary btn-block py-3">
+              </div>
+
+            </div>
+          </form>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Как забронировать: шаги повторяют справочник booking_statuses -->
+  <div class="site-section">
+    <div class="container">
+      <h2 class="section-heading"><strong>Как забронировать</strong></h2>
+      <p class="mb-5">Четыре шага — от выбора машины до возврата в офис</p>
+
+      <div class="row mb-5">
+        {% for step in booking_steps %}
+          <div class="col-lg-3 col-md-6 mb-4 mb-lg-0">
+            <div class="step h-100">
+              <span>{{ forloop.counter }}</span>
+              <div class="step-inner h-100">
+                <span class="number text-primary">0{{ forloop.counter }}.</span>
+                <h3>{{ step.name }}</h3>
+                <p>{{ step.description }}</p>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Классы автомобилей — справочник classes -->
+  <div class="site-section bg-light">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-7">
+          <h2 class="section-heading"><strong>Классы автомобилей</strong></h2>
+          <p class="mb-5">Подберите машину под задачу — от поездок по городу до дальних маршрутов</p>
+        </div>
+      </div>
+
+      <div class="row">
+        {% for car_class in car_classes %}
+          <div class="col-lg-3 col-md-6 mb-4">
+            <div class="service-1 dark h-100">
+              <span class="service-1-icon">
+                <span class="{{ car_class.icon }}"></span>
+              </span>
+              <div class="service-1-contents">
+                <h3>{{ car_class.name }}</h3>
+                <p>{{ car_class.description }}</p>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Автопарк: карточки собираются из таблицы cars и связанных справочников -->
+  <div class="site-section">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-7">
+          <h2 class="section-heading"><strong>Доступные автомобили</strong></h2>
+          <p class="mb-5">Часть автопарка — полный список в каталоге</p>
+        </div>
+      </div>
+
+      <div class="row">
+        {% for car in cars %}
+          <div class="col-md-6 col-lg-4 mb-4">
+            {% include "cars/includes/car_card.html" %}
+          </div>
+        {% empty %}
+          <div class="col-12">
+            <p>Автомобилей пока нет.</p>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="row">
+        <div class="col-12 text-center">
+          <a href="{% url 'cars:listing' %}" class="btn btn-primary">Весь автопарк</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Опции — справочник features, связан с cars через car_features -->
+  <div class="site-section bg-light">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-7">
+          <h2 class="section-heading"><strong>Дополнительное оснащение</strong></h2>
+          <p class="mb-5">Опции, которыми оснащены автомобили автопарка</p>
+        </div>
+      </div>
+
+      <div class="row">
+        {% for feature in features %}
+          <div class="col-lg-4 col-md-6 mb-4">
+            <div class="service-1 dark">
+              <span class="service-1-icon">
+                <span class="{{ feature.icon }}"></span>
+              </span>
+              <div class="service-1-contents">
+                <h3>{{ feature.name }}</h3>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Офисы — таблицы offices и cities. Показываем по три, остальные листаются -->
+  <div class="site-section">
+    <div class="container">
+      <div class="row align-items-end mb-5">
+        <div class="col-lg-8">
+          <h2 class="section-heading mb-2"><strong>Наши офисы</strong></h2>
+          <p class="mb-0">Получить и вернуть автомобиль можно в любом из них</p>
+        </div>
+        <div class="col-lg-4 text-lg-right mt-4 mt-lg-0">
+          <a href="#" class="btn btn-primary btn-sm offices-prev" aria-label="Назад">
+            <span class="icon-keyboard_arrow_left"></span>
+          </a>
+          <a href="#" class="btn btn-primary btn-sm offices-next ml-2" aria-label="Вперёд">
+            <span class="icon-keyboard_arrow_right"></span>
+          </a>
+        </div>
+      </div>
+
+      <style>
+        /* карточки офисов одинаковой высоты внутри карусели */
+        .offices-carousel .owl-stage { display: flex; }
+        .offices-carousel .owl-item { display: flex; }
+        .offices-carousel .owl-item > div { width: 100%; }
+      </style>
+
+      <div class="owl-carousel offices-carousel">
+        {% for office in offices %}
+          <div class="p-4 bg-light">
+            <h3 class="h5 mb-3">{{ office.city }}</h3>
+            <p class="mb-1"><strong>{{ office.name }}</strong></p>
+            <p class="mb-1">{{ office.address }}</p>
+            <p class="mb-1">{{ office.phone }}</p>
+            <p class="mb-0 text-muted">Часы работы: {{ office.work_hours }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+
+  <div class="site-section bg-primary py-5">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-lg-9">
+          <h2 class="mb-0 text-white">Нашли подходящую машину?</h2>
+          <p class="mb-0 text-white">Бронирование занимает пару минут</p>
+        </div>
+        <div class="col-lg-3 text-lg-right">
+          <a href="{% url 'cars:listing' %}" class="btn btn-primary btn-white">Выбрать автомобиль</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Карусель офисов: три карточки на экране, листание кнопками
+  $('.offices-carousel').owlCarousel({
+    items: 3,
+    loop: false,
+    margin: 30,
+    nav: false,
+    dots: true,
+    autoplay: false,
+    smartSpeed: 700,
+    responsive: {
+      0:   { items: 1, margin: 0 },
+      768: { items: 2, margin: 20 },
+      992: { items: 3, margin: 30 }
+    }
+  });
+
+  $('.offices-next').on('click', function (e) {
+    e.preventDefault();
+    $('.offices-carousel').trigger('next.owl.carousel');
+  });
+
+  $('.offices-prev').on('click', function (e) {
+    e.preventDefault();
+    $('.offices-carousel').trigger('prev.owl.carousel');
+  });
+</script>
+{% endblock %}

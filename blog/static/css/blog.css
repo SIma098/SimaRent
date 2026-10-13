@@ -1,0 +1,42 @@
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    color: #333;
+}
+
+a {
+    color: #00abff;
+    text-decoration: none;
+}
+
+h1, h2 {
+    font-weight: normal;
+    margin-bottom: 20px;
+}
+
+h1 a {
+    color: #333;
+}
+
+#content {
+    float: left;
+    width: 60%;
+    padding: 0 0 0 30px;
+}
+
+#sidebar {
+    float: right;
+    width: 30%;
+    padding: 10px;
+    background: #efefef;
+    height: 100%;
+}
+
+p.date {
+    color: #ccc;
+    font-family: Georgia, serif;
+    font-size: 12px;
+    font-style: italic;
+}

@@ -1,0 +1,188 @@
+{% extends "cars/base.html" %}
+{% load static %}
+
+{% block title %}О компании — SimaRent{% endblock %}
+
+{% block content %}
+
+  <div class="hero inner-page" style="background-image: url('{% static "carrentals/images/hero_1_a.jpg" %}');">
+    <div class="container">
+      <div class="row align-items-end">
+        <div class="col-lg-7">
+          <div class="intro">
+            <h1><strong>О компании</strong></h1>
+            <div class="custom-breadcrumbs">
+              <a href="{% url 'cars:home' %}">Главная</a>
+              <span class="mx-2">/</span> <strong>О компании</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="site-section">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-lg-6 mb-5 mb-lg-0 order-lg-2">
+          <img src="{% static 'carrentals/images/car_4.jpg' %}" alt="Автопарк SimaRent"
+               class="img-fluid rounded">
+        </div>
+        <div class="col-lg-5 mr-auto order-lg-1">
+          <h2 class="section-heading"><strong>SimaRent</strong></h2>
+          <p>
+            Мы сдаём автомобили в аренду с собственного автопарка. Все машины
+            принадлежат компании — мы не площадка объявлений и не посредник между
+            частными владельцами.
+          </p>
+          <p>
+            Получить автомобиль можно в любом нашем офисе, а вернуть — в любом
+            другом. Машина остаётся в том городе, где вы её сдали, и следующий
+            клиент забирает её уже оттуда.
+          </p>
+          <p class="mb-0">
+            <a href="{% url 'cars:listing' %}" class="btn btn-primary">Выбрать автомобиль</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Цифры считаются из данных, а не вписаны руками -->
+  <div class="site-section bg-light">
+    <div class="container">
+      <div class="row text-center">
+        <div class="col-md-4 mb-4 mb-md-0">
+          <h2 class="display-4 text-primary mb-0"><strong>{{ cars_total }}</strong></h2>
+          <p class="mb-0">автомобилей в автопарке</p>
+        </div>
+        <div class="col-md-4 mb-4 mb-md-0">
+          <h2 class="display-4 text-primary mb-0"><strong>{{ offices_total }}</strong></h2>
+          <p class="mb-0">офисов выдачи</p>
+        </div>
+        <div class="col-md-4">
+          <h2 class="display-4 text-primary mb-0"><strong>{{ cities_total }}</strong></h2>
+          <p class="mb-0">города присутствия</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="site-section">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-7">
+          <h2 class="section-heading"><strong>География</strong></h2>
+          <p class="mb-5">Офисы работают в трёх городах, включая аэропорты</p>
+        </div>
+      </div>
+      <div class="row">
+        {% for city in cities %}
+          <div class="col-md-4 mb-4">
+            <div class="p-4 bg-light h-100">
+              <h3 class="h5 mb-3">{{ city.name }}</h3>
+              <ul class="list-unstyled mb-0">
+                {% for office in offices %}
+                  {% if office.city == city.name %}
+                    <li class="mb-2">
+                      <span class="icon-map-marker mr-2 text-primary"></span>{{ office.name }}
+                    </li>
+                  {% endif %}
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="site-section bg-light">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-7">
+          <h2 class="section-heading"><strong>Классы автомобилей</strong></h2>
+          <p class="mb-5">Автопарк разделён на четыре класса</p>
+        </div>
+      </div>
+      <div class="row">
+        {% for car_class in car_classes %}
+          <div class="col-lg-3 col-md-6 mb-4">
+            <div class="service-1 dark h-100">
+              <span class="service-1-icon"><span class="{{ car_class.icon }}"></span></span>
+              <div class="service-1-contents">
+                <h3>{{ car_class.name }}</h3>
+                <p>{{ car_class.description }}</p>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="site-section">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-7">
+          <h2 class="section-heading"><strong>Условия аренды</strong></h2>
+          <p class="mb-5">Что нужно, чтобы получить автомобиль</p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-6 mb-4">
+          <div class="p-4 bg-light h-100">
+            <h3 class="h5 mb-3">Документы</h3>
+            <p class="mb-0">
+              Паспорт и водительское удостоверение. Бронь оформляется на того,
+              кто будет управлять автомобилем.
+            </p>
+          </div>
+        </div>
+        <div class="col-md-6 mb-4">
+          <div class="p-4 bg-light h-100">
+            <h3 class="h5 mb-3">Залог</h3>
+            <p class="mb-0">
+              Сумма залога зависит от автомобиля и указана в его карточке.
+              Возвращается после сдачи машины без повреждений.
+            </p>
+          </div>
+        </div>
+        <div class="col-md-6 mb-4">
+          <div class="p-4 bg-light h-100">
+            <h3 class="h5 mb-3">Оплата</h3>
+            <p class="mb-0">
+              Стоимость рассчитывается по цене за сутки, зафиксированной
+              в момент бронирования. Последующее изменение тарифа на вашу бронь
+              не влияет.
+            </p>
+          </div>
+        </div>
+        <div class="col-md-6 mb-4">
+          <div class="p-4 bg-light h-100">
+            <h3 class="h5 mb-3">Возврат</h3>
+            <p class="mb-0">
+              Сдать автомобиль можно в любом офисе сети, не только там, где
+              получали. Офис возврата указывается при бронировании.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="site-section bg-primary py-5">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-lg-9">
+          <h2 class="mb-0 text-white">Готовы выбрать автомобиль?</h2>
+          <p class="mb-0 text-white">Автомобилей в каталоге: {{ cars_total }}</p>
+        </div>
+        <div class="col-lg-3 text-lg-right">
+          <a href="{% url 'cars:listing' %}" class="btn btn-primary btn-white">В каталог</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}

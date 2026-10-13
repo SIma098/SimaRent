@@ -1,0 +1,47 @@
+{% extends "cars/base.html" %}
+{% load static %}
+
+{% block title %}Каталог автомобилей — SimaRent{% endblock %}
+
+{% block content %}
+
+  <div class="hero inner-page" style="background-image: url('{% static "carrentals/images/hero_1_a.jpg" %}');">
+    <div class="container">
+      <div class="row align-items-end">
+        <div class="col-lg-7">
+          <div class="intro">
+            <h1><strong>Автомобили</strong></h1>
+            <div class="custom-breadcrumbs">
+              <a href="{% url 'cars:home' %}">Главная</a>
+              <span class="mx-2">/</span> <strong>Каталог</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="site-section bg-light">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-7">
+          <h2 class="section-heading"><strong>Автопарк</strong></h2>
+          <p class="mb-5">Все автомобили компании: {{ cars_total }}</p>
+        </div>
+      </div>
+
+      <div class="row">
+        {% for car in cars %}
+          <div class="col-md-6 col-lg-4 mb-4">
+            {% include "cars/includes/car_card.html" %}
+          </div>
+        {% empty %}
+          <div class="col-12">
+            <p>Автомобилей пока нет.</p>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+{% endblock %}
