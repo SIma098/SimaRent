@@ -8,6 +8,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import F, Q
+from simple_history.models import HistoricalRecords
 
 # Сообщения для проверок числовых полей
 MUST_BE_POSITIVE = 'Значение должно быть больше 0.'
@@ -85,6 +86,11 @@ class User(AbstractBaseUser):
         related_name='+', db_column='user_updated', verbose_name='Кто изменил',
     )
 
+    # история изменений: роль, блокировка, контакты; пароль и дату входа не храним
+    history = HistoricalRecords(
+        table_name='users_history', excluded_fields=['password', 'last_login'],
+    )
+
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
@@ -101,6 +107,15 @@ class User(AbstractBaseUser):
         full_name = f'{self.first_name} {self.last_name}'.strip()
         return full_name or self.email
 
+    def save(self, *args, **kwargs):
+        # при входе Django сохраняет только last_login — это не правка данных,
+        # поэтому в историю такую запись не пишем
+        if kwargs.get('update_fields') == ['last_login']:
+            self.skip_history_when_saving = True
+        try:
+            super().save(*args, **kwargs)
+        finally:
+            self.__dict__.pop('skip_history_when_saving', None)
 
     @property
     def is_active(self):
@@ -427,6 +442,9 @@ class Car(AuditModel):
     active = models.BooleanField('Активен', default=True)
     date_deleted = models.DateTimeField('Дата удаления', null=True, blank=True)
 
+    # история изменений: цена, статус, офис, пробег и набор опций
+    history = HistoricalRecords(table_name='cars_history', m2m_fields=[features])
+
     objects = models.Manager()
     available = AvailableCarManager()
 
@@ -569,6 +587,9 @@ class Booking(AuditModel):
     date_start_fact = models.DateTimeField('Фактическая выдача', null=True, blank=True)
     date_end_fact = models.DateTimeField('Фактический возврат', null=True, blank=True)
     date_cancelled = models.DateTimeField('Дата отмены', null=True, blank=True)
+
+    # история изменений: статус, даты, суммы, оплата
+    history = HistoricalRecords(table_name='bookings_history')
 
     class Meta:
         db_table = 'bookings'

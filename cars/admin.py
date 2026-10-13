@@ -4,6 +4,8 @@ from django.contrib.auth.forms import AdminUserCreationForm, UserChangeForm
 from django.contrib.auth.models import Group
 from django.db.models import Count
 from django.utils.html import format_html
+from import_export.admin import ExportActionMixin
+from simple_history.admin import SimpleHistoryAdmin
 
 from .models import (
     BodyType,
@@ -23,6 +25,7 @@ from .models import (
     TransmissionType,
     User,
 )
+from .resources import BookingResource, CarResource
 
 # Группы Django не нужны: права выдаются через собственную таблицу ролей
 admin.site.unregister(Group)
@@ -121,7 +124,7 @@ class BookingOfUserInline(admin.TabularInline):
 
 
 @admin.register(User)
-class UserAdmin(AuditAdminMixin, BaseUserAdmin):
+class UserAdmin(AuditAdminMixin, SimpleHistoryAdmin, BaseUserAdmin):
     form = UserEditForm
     add_form = UserCreateForm
 
@@ -134,6 +137,7 @@ class UserAdmin(AuditAdminMixin, BaseUserAdmin):
     ordering = ('last_name', 'first_name')
     filter_horizontal = ()
     inlines = [BookingOfUserInline]
+    history_list_display = ('role', 'blocked')
 
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
@@ -340,7 +344,7 @@ class CarPhotoInline(admin.TabularInline):
 
 
 @admin.register(Car)
-class CarAdmin(AuditAdminMixin, admin.ModelAdmin):
+class CarAdmin(AuditAdminMixin, ExportActionMixin, SimpleHistoryAdmin):
     list_display = ('photo', 'reg_number', 'title', 'car_class', 'year',
                     'price_day', 'status', 'current_office')
     list_display_links = ('photo', 'reg_number', 'title')
@@ -353,6 +357,8 @@ class CarAdmin(AuditAdminMixin, admin.ModelAdmin):
     readonly_fields = AUDIT_FIELDS
     list_select_related = ('model__brand', 'car_class', 'current_office__city')
     inlines = [CarPhotoInline]
+    resource_classes = [CarResource]
+    history_list_display = ('status', 'price_day', 'current_office', 'mileage')
 
     fieldsets = (
         ('Автомобиль', {
@@ -439,7 +445,7 @@ class BookingStatusAdmin(admin.ModelAdmin):
 
 
 @admin.register(Booking)
-class BookingAdmin(AuditAdminMixin, admin.ModelAdmin):
+class BookingAdmin(AuditAdminMixin, ExportActionMixin, SimpleHistoryAdmin):
     list_display = ('booking_number', 'user', 'car', 'period', 'days_count',
                     'total_sum', 'status_badge', 'paid')
     list_display_links = ('booking_number',)
@@ -450,6 +456,8 @@ class BookingAdmin(AuditAdminMixin, admin.ModelAdmin):
     readonly_fields = ('booking_number', 'days_count', 'price_day', 'total_sum',
                        'deposit') + AUDIT_FIELDS
     list_select_related = ('user', 'car__model__brand', 'status')
+    resource_classes = [BookingResource]
+    history_list_display = ('status', 'paid', 'total_sum')
 
     fieldsets = (
         ('Бронь', {'fields': ('booking_number', 'user', 'car', 'status', 'paid')}),
