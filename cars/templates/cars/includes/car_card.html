@@ -6,7 +6,7 @@
 {% endcomment %}
 <div class="listing d-block h-100">
 
-  <div class="listing-img">
+  <a href="{{ car.get_absolute_url }}" class="listing-img d-block">
     {% with photo=car.photos.all|first %}
       {% if photo %}
         <img src="{{ photo.file_path.url }}" alt="{{ photo.alt_text|default:car.model }}" class="img-fluid">
@@ -14,10 +14,13 @@
         <div class="bg-light text-muted text-center py-5">Фото скоро появится</div>
       {% endif %}
     {% endwith %}
-  </div>
+  </a>
 
   <div class="listing-contents">
-    <h3>{{ car.model }}</h3>
+    <h3><a href="{{ car.get_absolute_url }}">{{ car.model }}</a></h3>
+    {% if not car.active or car.status == 'archived' %}
+      <span class="badge badge-secondary mb-2">Не показывается клиентам</span>
+    {% endif %}
     <p class="text-muted mb-2">
       {{ car.car_class }} · {{ car.body_type }} · {{ car.year }} г.
     </p>
@@ -59,6 +62,16 @@
           <span class="btn btn-secondary btn-sm disabled">{{ car.get_status_display }}</span>
         {% endif %}
       </p>
+      <!-- Управление каталогом — только для сотрудников с правами -->
+      {% if perms.cars.change_car %}
+        <!-- две кнопки одной ширины: каждая занимает половину строки -->
+        <div class="d-flex mt-2">
+          <a href="{% url 'cars:car_update' car.pk %}" class="btn btn-outline-primary btn-sm" style="flex: 1 1 0;">Изменить</a>
+          {% if perms.cars.delete_car %}
+            <a href="{% url 'cars:car_delete' car.pk %}" class="btn btn-outline-danger btn-sm ml-2" style="flex: 1 1 0;">Удалить</a>
+          {% endif %}
+        </div>
+      {% endif %}
     </div>
   </div>
 

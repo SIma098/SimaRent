@@ -24,6 +24,11 @@
   <!-- Офисы сгруппированы по городам: таблицы cities и offices -->
   <div class="site-section">
     <div class="container">
+      {% if perms.cars.add_office %}
+        <div class="mb-4">
+          <a href="{% url 'cars:office_create' %}" class="btn btn-primary">+ Добавить офис</a>
+        </div>
+      {% endif %}
       {% for city in cities %}
         <div class="row mb-2">
           <div class="col-12">
@@ -44,6 +49,16 @@
                   <p class="mb-0 text-muted">
                     <span class="icon-watch_later mr-2"></span>{{ office.work_hours }}
                   </p>
+                  <!-- Управление офисами — только для админа (права на офисы) -->
+                  {% if perms.cars.change_office %}
+                    <p class="mt-3 mb-0">
+                      {% if not office.active %}<span class="badge badge-secondary mr-2">Скрыт</span>{% endif %}
+                      <a href="{% url 'cars:office_update' office.pk %}" class="btn btn-outline-primary btn-sm">Изменить</a>
+                      {% if perms.cars.delete_office %}
+                        <a href="{% url 'cars:office_delete' office.pk %}" class="btn btn-outline-danger btn-sm">Удалить</a>
+                      {% endif %}
+                    </p>
+                  {% endif %}
                 </div>
               </div>
           {% endfor %}

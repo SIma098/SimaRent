@@ -1,0 +1,49 @@
+{% extends "cars/base.html" %}
+
+{% block title %}Личный кабинет — SimaRent{% endblock %}
+
+{% block content %}
+  {% with title="Личный кабинет" %}{% include "cars/includes/hero.html" %}{% endwith %}
+
+  <div class="site-section">
+    <div class="container">
+      <div class="row">
+
+        <!-- Мои данные: просмотр и изменение -->
+        <div class="col-lg-6 mb-5">
+          <div class="p-4 bg-light">
+            <h3 class="h5 mb-3">Мои данные</h3>
+            <p class="mb-1"><span class="text-muted">Почта:</span> {{ user.email }}</p>
+            <p class="mb-4"><span class="text-muted">Роль:</span> {{ user.role|default:"не назначена" }}</p>
+
+            <form method="post">
+              {% csrf_token %}
+              {% for field in form %}
+                {% include "cars/includes/field.html" %}
+              {% endfor %}
+              <button type="submit" class="btn btn-primary">Сохранить</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Мои бронирования -->
+        <div class="col-lg-6">
+          <h3 class="h5 mb-3">Мои бронирования</h3>
+          {% for booking in bookings %}
+            <div class="p-3 bg-light mb-3">
+              <strong>{{ booking.booking_number }}</strong> · {{ booking.car.model }}
+              <span class="badge text-white ml-1" style="background: {{ booking.status.color|default:'#888' }}">{{ booking.status }}</span><br>
+              <span class="text-muted">
+                {{ booking.date_start|date:"d.m.Y" }} — {{ booking.date_end|date:"d.m.Y" }},
+                {{ booking.pickup_office.name }} · {{ booking.total_sum|floatformat:"0g" }} ₽
+              </span>
+            </div>
+          {% empty %}
+            <p class="text-muted">Бронирований пока нет.</p>
+          {% endfor %}
+        </div>
+
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -8,6 +8,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import F, Q
+from django.urls import reverse
 from simple_history.models import HistoricalRecords
 
 # Сообщения для проверок числовых полей
@@ -470,6 +471,9 @@ class Car(AuditModel):
 
     def __str__(self):
         return f'{self.model} {self.reg_number}'
+
+    def get_absolute_url(self):
+        return reverse('cars:car_detail', kwargs={'pk': self.pk})
 
     def clean(self):
         super().clean()

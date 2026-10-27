@@ -1,0 +1,50 @@
+{% extends "cars/base.html" %}
+{% comment %}
+  Одна форма на создание и изменение (автомобиль, офис).
+  Если у формы есть sections — поля выводятся по разделам.
+{% endcomment %}
+
+{% block title %}{{ title }} — SimaRent{% endblock %}
+
+{% block content %}
+  {% include "cars/includes/hero.html" %}
+
+  <div class="site-section">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-lg-9">
+          <!-- enctype нужен, чтобы вместе с формой отправлялся файл фото -->
+          <form method="post" enctype="multipart/form-data" class="p-4 bg-light">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>
+            {% endif %}
+
+            {% if form.sections %}
+              {% for section_title, names in form.sections %}
+                <h3 class="h5 mt-3 mb-3">{{ section_title }}</h3>
+                <div class="row">
+                  {% for field in form %}
+                    {% if field.name in names %}
+                      <div class="{% if field.name == 'features' %}col-12{% else %}col-md-6{% endif %}">
+                        {% include "cars/includes/field.html" %}
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              {% endfor %}
+            {% else %}
+              {% for field in form %}
+                {% include "cars/includes/field.html" %}
+              {% endfor %}
+            {% endif %}
+
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+            <a href="{{ cancel_url }}" class="btn btn-secondary ml-2">Отмена</a>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

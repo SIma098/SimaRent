@@ -1,0 +1,66 @@
+{% extends "cars/base.html" %}
+{% load static %}
+
+{% block title %}{{ car.model }} — SimaRent{% endblock %}
+
+{% block content %}
+  {% with title=car.model %}{% include "cars/includes/hero.html" %}{% endwith %}
+
+  <div class="site-section">
+    <div class="container">
+
+      <!-- Кнопки управления видны только сотрудникам с нужными правами -->
+      {% if perms.cars.change_car or perms.cars.delete_car %}
+        <div class="mb-4">
+          {% if perms.cars.change_car %}
+            <a href="{% url 'cars:car_update' car.pk %}" class="btn btn-primary btn-sm">Изменить</a>
+          {% endif %}
+          {% if perms.cars.delete_car %}
+            <a href="{% url 'cars:car_delete' car.pk %}" class="btn btn-danger btn-sm ml-2">Удалить</a>
+          {% endif %}
+          {% if not car.active or car.status == 'archived' %}
+            <span class="badge badge-secondary ml-2 p-2">Не показывается клиентам</span>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <div class="row">
+        <div class="col-lg-7 mb-4">
+          {% for photo in car.photos.all %}
+            <img src="{{ photo.file_path.url }}" alt="{{ photo.alt_text }}" class="img-fluid mb-3">
+          {% empty %}
+            <div class="bg-light text-muted text-center py-5">Фото скоро появится</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-lg-5">
+          <p class="text-muted mb-1">{{ car.car_class }} · {{ car.body_type }} · {{ car.year }} г.</p>
+          <h2 class="text-primary mb-1"><strong>{{ car.price_day|floatformat:"0g" }} ₽</strong> / сутки</h2>
+          <p class="mb-4">Залог {{ car.deposit|floatformat:"0g" }} ₽ · {{ car.get_status_display }}</p>
+
+          <table class="table table-sm">
+            <tr><th>Госномер</th><td>{{ car.reg_number }}</td></tr>
+            <tr><th>Цвет</th><td>{{ car.color }}</td></tr>
+            <tr><th>Коробка</th><td>{{ car.transmission_type }}</td></tr>
+            <tr><th>Топливо</th><td>{{ car.fuel_type }}</td></tr>
+            <tr><th>Двигатель</th><td>{{ car.engine_volume }} л / {{ car.horsepower }} л.с.</td></tr>
+            <tr><th>Расход</th><td>{{ car.fuel_consumption }} л на 100 км</td></tr>
+            <tr><th>Мест / дверей</th><td>{{ car.seats_count }} / {{ car.doors_count }}</td></tr>
+            <tr><th>Багажник</th><td>{{ car.trunk_volume }} л</td></tr>
+            <tr><th>Пробег</th><td>{{ car.mileage|floatformat:"0g" }} км</td></tr>
+            <tr><th>Где сейчас</th><td>{{ car.current_office|default:"у клиента" }}</td></tr>
+          </table>
+
+          {% if car.features.all %}
+            <h3 class="h6">Опции</h3>
+            <ul class="mb-4">
+              {% for feature in car.features.all %}<li>{{ feature }}</li>{% endfor %}
+            </ul>
+          {% endif %}
+
+          <a href="{% url 'cars:listing' %}" class="btn btn-secondary btn-sm">← В каталог</a>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

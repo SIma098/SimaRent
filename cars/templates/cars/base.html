@@ -45,13 +45,13 @@
         <div class="container">
           <div class="row align-items-center position-relative">
 
-            <div class="col-3">
+            <div class="col-3 col-lg-2">
               <div class="site-logo">
                 <a href="{% url 'cars:home' %}"><strong>SimaRent</strong></a>
               </div>
             </div>
 
-            <div class="col-9  text-right">
+            <div class="col-9 col-lg-10 text-right">
               
               <span class="d-inline-block d-lg-none"><a href="#" class=" site-menu-toggle js-menu-toggle py-5 "><span class="icon-menu h3 text-black"></span></a></span>
 
@@ -66,12 +66,17 @@
                       <li><a href="{% url 'admin:index' %}" class="nav-link">Админка</a></li>
                     {% endif %}
                     <li>
+                      <a href="{% url 'cars:profile' %}" class="nav-link" title="Личный кабинет">
+                        <span class="icon-person mr-1"></span>{{ user.first_name|default:user.email }}
+                      </a>
+                    </li>
+                    <li>
                       <!-- выход в Django 5 — только POST-запросом, поэтому форма -->
                       <form action="{% url 'cars:logout' %}" method="post" class="d-inline">
                         {% csrf_token %}
                         <button type="submit" title="{{ user.email }}"
                                 style="margin: 0 15px; padding: 20px 0; border: 0; background: none; font: inherit; color: rgba(0, 0, 0, 0.7); cursor: pointer;">
-                          Выйти ({{ user.first_name|default:user.email }})
+                          Выйти
                         </button>
                       </form>
                     </li>
@@ -87,6 +92,17 @@
         </div>
 
       </header>
+
+      <!-- Сообщения после действий: «Сохранено», «Удалено» и т. п.
+           Всплывают справа под шапкой и скрываются через 6 секунд -->
+      {% if messages %}
+        <div class="site-messages" style="position: fixed; top: 90px; right: 20px; z-index: 1050; max-width: 420px;">
+          {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} shadow mb-2">{{ message }}</div>
+          {% endfor %}
+        </div>
+        <script>setTimeout(function () { document.querySelector('.site-messages').remove(); }, 6000);</script>
+      {% endif %}
 
 {% block content %}{% endblock %}
 

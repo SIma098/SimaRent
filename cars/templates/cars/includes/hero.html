@@ -1,0 +1,17 @@
+{% load static %}
+{% comment %}Шапка внутренней страницы: заголовок и «хлебные крошки». Параметр — title.{% endcomment %}
+<div class="hero inner-page" style="background-image: url('{% static "carrentals/images/hero_1_a.jpg" %}');">
+  <div class="container">
+    <div class="row align-items-end">
+      <div class="col-lg-9">
+        <div class="intro">
+          <h1><strong>{{ title }}</strong></h1>
+          <div class="custom-breadcrumbs">
+            <a href="{% url 'cars:home' %}">Главная</a>
+            <span class="mx-2">/</span> <strong>{{ title }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

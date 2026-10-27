@@ -1,10 +1,14 @@
 from datetime import timedelta
 
-from django.db.models import Avg, Count, Max, Min, Prefetch, Q, Sum
-from django.shortcuts import render
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, permission_required
+from django.db.models import Avg, Count, Max, Min, Prefetch, ProtectedError, Q, Sum
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 
-from .models import Booking, Car, CarClass, City, Feature, Office
+from .forms import CarForm, OfficeForm, ProfileForm
+from .models import Booking, Car, CarClass, CarPhoto, City, Feature, Office
 
 # Иконки классов и опций — оформление сайта, а не данные, поэтому не в базе
 CLASS_ICONS = {
@@ -38,9 +42,9 @@ def car_cards():
     )
 
 
-def active_cities():
-    """Города вместе с их офисами (форма подбора, «О компании», контакты)."""
-    offices = Office.objects.filter(active=True)
+def active_cities(with_hidden=False):
+    """Города вместе с их офисами. with_hidden — показать и скрытые офисы (для админа)."""
+    offices = Office.objects.all() if with_hidden else Office.objects.filter(active=True)
     return City.objects.filter(active=True).prefetch_related(Prefetch('offices', queryset=offices))
 
 
@@ -144,12 +148,16 @@ def home(request):
     return render(request, 'cars/home.html', context)
 
 
+def visible_cars(user):
+    """Клиент видит только действующие машины, сотрудник с правом правки — все."""
+    cars = car_cards()
+    if user.has_perm('cars.change_car'):
+        return cars
+    return cars.filter(active=True, date_deleted__isnull=True).exclude(status=Car.Status.ARCHIVED)
+
+
 def listing(request):
-    cars = (
-        car_cards()
-        .filter(active=True, date_deleted__isnull=True)
-        .exclude(status=Car.Status.ARCHIVED)
-    )
+    cars = visible_cars(request.user)
     return render(request, 'cars/listing.html', {'cars': cars, 'cars_total': cars.count()})
 
 
@@ -165,4 +173,177 @@ def about(request):
 
 
 def contact(request):
-    return render(request, 'cars/contact.html', {'cities': active_cities()})
+    with_hidden = request.user.has_perm('cars.change_office')
+    return render(request, 'cars/contact.html', {'cities': active_cities(with_hidden)})
+
+
+# CRUD автомобилей (каталог): просмотр — всем, остальное — по правам
+
+def car_detail(request, pk):
+    """Read: страница одного автомобиля."""
+    car = get_object_or_404(visible_cars(request.user).prefetch_related('features'), pk=pk)
+    return render(request, 'cars/car_detail.html', {'car': car})
+
+
+def save_car(request, form, is_new):
+    """Общее для создания и изменения: аудит, сохранение, новое фото."""
+    car = form.save(commit=False)
+    if is_new:
+        car.user_created = request.user
+    car.user_updated = request.user
+    car.save()
+    form.save_m2m()  # опции (многие-ко-многим) сохраняются после самой машины
+    photo = form.cleaned_data.get('photo')
+    if photo:
+        CarPhoto.objects.create(
+            car=car, file_path=photo, alt_text=str(car.model),
+            sort_order=car.photos.count(), user_uploaded=request.user,
+        )
+    return car
+
+
+@login_required
+@permission_required('cars.add_car', raise_exception=True)
+def car_create(request):
+    """Create: новый автомобиль."""
+    form = CarForm(request.POST or None, request.FILES or None)
+    if request.method == 'POST' and form.is_valid():
+        car = save_car(request, form, is_new=True)
+        messages.success(request, f'Автомобиль {car} добавлен.')
+        return redirect('cars:car_detail', pk=car.pk)
+    return render(request, 'cars/object_form.html', {
+        'form': form, 'title': 'Новый автомобиль', 'cancel_url': reverse('cars:listing'),
+    })
+
+
+@login_required
+@permission_required('cars.change_car', raise_exception=True)
+def car_update(request, pk):
+    """Update: изменение автомобиля. Форма открывается уже заполненной (instance=car)."""
+    car = get_object_or_404(Car, pk=pk)
+    form = CarForm(request.POST or None, request.FILES or None, instance=car)
+    if request.method == 'POST' and form.is_valid():
+        save_car(request, form, is_new=False)
+        messages.success(request, f'Изменения сохранены: {car}.')
+        return redirect('cars:car_detail', pk=car.pk)
+    return render(request, 'cars/object_form.html', {
+        'form': form, 'title': f'Изменить: {car}', 'cancel_url': car.get_absolute_url(),
+    })
+
+
+@login_required
+@permission_required('cars.delete_car', raise_exception=True)
+def car_delete(request, pk):
+    """Delete: GET — страница подтверждения, POST — удаление.
+
+    Машину с историей бронирований удалить нельзя (брони ссылаются на неё),
+    поэтому такая машина уходит в архив: на сайте её больше не видно.
+    """
+    car = get_object_or_404(Car, pk=pk)
+    has_bookings = car.bookings.exists()
+    if request.method == 'POST':
+        if car.status == Car.Status.RENTED:
+            messages.error(request, 'Машина сейчас в аренде — удалить её нельзя.')
+            return redirect('cars:car_detail', pk=car.pk)
+        if has_bookings:
+            car.status = Car.Status.ARCHIVED
+            car.active = False
+            car.date_deleted = timezone.now()
+            car.user_updated = request.user
+            car.save()
+            messages.success(request, f'{car}: есть брони, поэтому машина перенесена в архив.')
+        else:
+            for photo in car.photos.all():
+                photo.file_path.delete(save=False)  # файл фото с диска
+            name = str(car)
+            car.delete()
+            messages.success(request, f'Автомобиль {name} удалён.')
+        return redirect('cars:listing')
+    return render(request, 'cars/confirm_delete.html', {
+        'object': car, 'title': f'Удалить {car}?',
+        'warning': 'У машины есть бронирования — она будет перенесена в архив.'
+                   if has_bookings else 'Машина и её фотографии будут удалены навсегда.',
+        'cancel_url': car.get_absolute_url(),
+    })
+
+
+# CRUD офисов (страница «Контакты»)
+
+@login_required
+@permission_required('cars.add_office', raise_exception=True)
+def office_create(request):
+    form = OfficeForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        office = form.save(commit=False)
+        office.user_created = office.user_updated = request.user
+        office.save()
+        messages.success(request, f'Офис «{office.name}» добавлен.')
+        return redirect('cars:contact')
+    return render(request, 'cars/object_form.html', {
+        'form': form, 'title': 'Новый офис', 'cancel_url': reverse('cars:contact'),
+    })
+
+
+@login_required
+@permission_required('cars.change_office', raise_exception=True)
+def office_update(request, pk):
+    office = get_object_or_404(Office, pk=pk)
+    form = OfficeForm(request.POST or None, instance=office)
+    if request.method == 'POST' and form.is_valid():
+        office = form.save(commit=False)
+        office.user_updated = request.user
+        office.save()
+        messages.success(request, f'Офис «{office.name}» сохранён.')
+        return redirect('cars:contact')
+    return render(request, 'cars/object_form.html', {
+        'form': form, 'title': f'Изменить офис: {office.name}',
+        'cancel_url': reverse('cars:contact'),
+    })
+
+
+@login_required
+@permission_required('cars.delete_office', raise_exception=True)
+def office_delete(request, pk):
+    """К офису привязаны машины и брони (PROTECT), такой офис только скрываем."""
+    office = get_object_or_404(Office, pk=pk)
+    if request.method == 'POST':
+        try:
+            office.delete()
+            messages.success(request, f'Офис «{office.name}» удалён.')
+        except ProtectedError:
+            office.active = False
+            office.user_updated = request.user
+            office.save()
+            messages.warning(
+                request, f'К офису «{office.name}» привязаны машины или брони, '
+                         f'поэтому он не удалён, а скрыт с сайта.',
+            )
+        return redirect('cars:contact')
+    return render(request, 'cars/confirm_delete.html', {
+        'object': office, 'title': f'Удалить офис «{office.name}»?',
+        'warning': 'Если к офису привязаны машины или брони, он будет скрыт, а не удалён.',
+        'cancel_url': reverse('cars:contact'),
+    })
+
+
+# Личный кабинет: пользователь меняет свои данные
+
+@login_required
+def profile(request):
+    """Read + Update своего профиля: имя, фамилия, телефон.
+
+    Чтобы удалить телефон, достаточно стереть поле и сохранить —
+    форма запишет в базу пустое значение (NULL).
+    """
+    form = ProfileForm(request.POST or None, instance=request.user)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Данные сохранены.')
+        return redirect('cars:profile')
+    bookings = (
+        Booking.objects.filter(user=request.user)
+        .select_related('car__model__brand', 'status', 'pickup_office')
+        .order_by('-date_start')
+    )
+    return render(request, 'cars/profile.html', {'form': form, 'bookings': bookings})
+
