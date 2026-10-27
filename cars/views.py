@@ -1,14 +1,15 @@
 from datetime import timedelta
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
 from django.db.models import Avg, Count, Max, Min, Prefetch, ProtectedError, Q, Sum
+from django.db.models.functions import TruncMonth
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
 from .forms import CarForm, OfficeForm, ProfileForm
-from .models import Booking, Car, CarClass, CarPhoto, City, Feature, Office
+from .models import Booking, Car, CarClass, CarPhoto, City, Feature, Office, User
 
 # Иконки классов и опций — оформление сайта, а не данные, поэтому не в базе
 CLASS_ICONS = {
@@ -347,3 +348,110 @@ def profile(request):
     )
     return render(request, 'cars/profile.html', {'form': form, 'bookings': bookings})
 
+
+# Дашборд: статистика и графики — только для администратора
+
+MONTHS = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
+
+
+def month_starts(count):
+    """Первые числа последних count месяцев, от старого к новому."""
+    first = timezone.localtime().date().replace(day=1)
+    months = []
+    for _ in range(count):
+        months.append(first)
+        first = (first - timedelta(days=1)).replace(day=1)
+    return months[::-1]
+
+
+@login_required
+@user_passes_test(lambda user: user.is_superuser)
+def dashboard(request):
+    paid = Q(paid=True)
+
+    # Плитки сверху: aggregate по всем броням
+    totals = Booking.objects.aggregate(
+        count=Count('booking_id'),
+        revenue=Sum('total_sum', filter=paid),
+        average=Avg('total_sum', filter=paid),
+        days=Avg('days_count'),
+        cancelled=Count('booking_id', filter=Q(status__code='cancelled')),
+    )
+    clients = User.objects.filter(bookings__isnull=False).distinct().count()
+
+    # График 1. Брони и выручка по месяцам: TruncMonth + values + annotate = GROUP BY месяц
+    months = month_starts(12)
+    by_month = {
+        row['month'].date() if hasattr(row['month'], 'date') else row['month']: row
+        for row in Booking.objects.filter(date_start__date__gte=months[0])
+        .annotate(month=TruncMonth('date_start'))
+        .values('month')
+        .annotate(count=Count('booking_id'), revenue=Sum('total_sum', filter=paid))
+    }
+    monthly = {
+        'labels': [f'{MONTHS[m.month - 1]} {m:%y}' for m in months],
+        'count': [by_month.get(m, {}).get('count', 0) for m in months],
+        'revenue': [float(by_month.get(m, {}).get('revenue') or 0) for m in months],
+    }
+
+    # График 2. Машины по статусам (круговая)
+    status_names = dict(Car.Status.choices)
+    status_colors = {'available': '#28a745', 'rented': '#ffc107',
+                     'service': '#fd7e14', 'archived': '#6c757d'}
+    by_status = Car.objects.values('status').annotate(n=Count('car_id')).order_by('status')
+    cars_chart = {
+        'labels': [status_names[row['status']] for row in by_status],
+        'data': [row['n'] for row in by_status],
+        'colors': [status_colors[row['status']] for row in by_status],
+    }
+
+    # График 3. Выручка по классам автомобилей (гистограмма)
+    by_class = (
+        Booking.objects.filter(paid)
+        .values('car__car_class__name')
+        .annotate(revenue=Sum('total_sum'), count=Count('booking_id'))
+        .order_by('-revenue')
+    )
+    class_chart = {
+        'labels': [row['car__car_class__name'] for row in by_class],
+        'data': [float(row['revenue']) for row in by_class],
+    }
+
+    # Загрузка офисов — прогресс-бары: сколько выдач в каждом офисе
+    offices = (
+        Office.objects.select_related('city')
+        .annotate(pickups_count=Count('pickups'))
+        .order_by('-pickups_count')
+    )
+    max_pickups = max((office.pickups_count for office in offices), default=0)
+
+    # Топ клиентов по сумме оплаченных броней
+    top_clients = (
+        User.objects.annotate(
+            spent=Sum('bookings__total_sum', filter=Q(bookings__paid=True)),
+            trips=Count('bookings'),
+        )
+        .filter(spent__isnull=False)
+        .order_by('-spent')[:5]
+    )
+
+    # Последние брони — в шаблоне группируются по статусу тегом {% regroup %}
+    recent = (
+        Booking.objects.select_related('user', 'car__model__brand', 'status', 'pickup_office')
+        .order_by('-date_created')[:12]
+    )
+    recent = sorted(recent, key=lambda b: (b.status.sort_order, -b.date_created.timestamp()))
+
+    return render(request, 'cars/dashboard.html', {
+        'totals': totals,
+        'clients': clients,
+        'cars_total': Car.objects.count(),
+        'monthly': monthly,
+        'cars_chart': cars_chart,
+        'class_chart': class_chart,
+        'by_class': by_class,
+        'offices': offices,
+        'max_pickups': max_pickups,
+        'top_clients': top_clients,
+        'recent': recent,
+    })

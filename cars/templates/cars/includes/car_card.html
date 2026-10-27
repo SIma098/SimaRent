@@ -4,14 +4,14 @@
   поэтому выглядит одинаково в обоих местах. Поля — из таблицы cars
   и связанных справочников; фото — первая запись из car_photos.
 {% endcomment %}
-<div class="listing d-block h-100">
+<div class="listing h-100">
 
   <a href="{{ car.get_absolute_url }}" class="listing-img d-block">
     {% with photo=car.photos.all|first %}
       {% if photo %}
         <img src="{{ photo.file_path.url }}" alt="{{ photo.alt_text|default:car.model }}" class="img-fluid">
       {% else %}
-        <div class="bg-light text-muted text-center py-5">Фото скоро появится</div>
+        <div class="bg-light text-muted">Фото скоро появится</div>
       {% endif %}
     {% endwith %}
   </a>
@@ -51,24 +51,26 @@
       </p>
       <p class="mb-1">Расход {{ car.fuel_consumption }} л на 100 км</p>
       <p class="mb-3">
-        <span class="icon-map-marker mr-1"></span>
+        <i class="bi bi-geo-alt mr-1"></i>
         {% if car.current_office %}{{ car.current_office }}{% else %}{{ car.get_status_display }}{% endif %}
       </p>
       <p class="mb-0">Залог {{ car.deposit|floatformat:"0g" }} ₽</p>
-      <p class="mt-3 mb-0">
-        {% if car.status == 'available' %}
-          <a href="#" class="btn btn-primary btn-sm">Забронировать</a>
-        {% else %}
-          <span class="btn btn-secondary btn-sm disabled">{{ car.get_status_display }}</span>
-        {% endif %}
-      </p>
+    </div>
+
+    <!-- Кнопки прижаты к низу карточки, поэтому в соседних карточках они на одном уровне -->
+    <div class="listing-actions">
+      {% if car.status == 'available' %}
+        <a href="#" class="btn btn-primary btn-block">Забронировать</a>
+      {% else %}
+        <span class="btn btn-secondary btn-block disabled">{{ car.get_status_display }}</span>
+      {% endif %}
       <!-- Управление каталогом — только для сотрудников с правами -->
       {% if perms.cars.change_car %}
         <!-- две кнопки одной ширины: каждая занимает половину строки -->
         <div class="d-flex mt-2">
-          <a href="{% url 'cars:car_update' car.pk %}" class="btn btn-outline-primary btn-sm" style="flex: 1 1 0;">Изменить</a>
+          <a href="{% url 'cars:car_update' car.pk %}" class="btn btn-outline-primary btn-sm" style="flex: 1 1 0;"><i class="bi bi-pencil"></i> Изменить</a>
           {% if perms.cars.delete_car %}
-            <a href="{% url 'cars:car_delete' car.pk %}" class="btn btn-outline-danger btn-sm ml-2" style="flex: 1 1 0;">Удалить</a>
+            <a href="{% url 'cars:car_delete' car.pk %}" class="btn btn-outline-danger btn-sm ml-2" style="flex: 1 1 0;"><i class="bi bi-trash"></i> Удалить</a>
           {% endif %}
         </div>
       {% endif %}

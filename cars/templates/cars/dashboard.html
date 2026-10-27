@@ -1,0 +1,212 @@
+{% extends "cars/base.html" %}
+{% load sima_tags %}
+{% comment %}
+  Дашборд администратора. Помимо графиков здесь собраны примеры шаблонизатора Django:
+  циклы, условия, фильтры, встроенные и свои теги — у каждого есть пометка «Шаблонизатор: …».
+{% endcomment %}
+
+{% block title %}Дашборд — SimaRent{% endblock %}
+
+{% block content %}
+  {% with title="Дашборд" %}{% include "cars/includes/hero.html" %}{% endwith %}
+  {# Шаблонизатор: with — временная переменная; include — вставка другого шаблона #}
+
+  <div class="site-section">
+    <div class="container">
+
+      <p class="text-muted mb-4">
+        <i class="bi bi-clock-history mr-1"></i>
+        Данные на {% now "d.m.Y H:i" %}  {# Шаблонизатор: тег now — текущая дата #}
+      </p>
+
+      <!-- Плитки: свой тег stat_card (cars/templatetags/sima_tags.py) + свой фильтр ru_plural -->
+      <div class="row mb-4">
+        <div class="col-sm-6 col-lg-4 mb-3">{% stat_card "бронирований" totals.count "bi-calendar-check" %}</div>
+        <div class="col-sm-6 col-lg-4 mb-3">{% stat_card "выручка, ₽" totals.revenue|floatformat:"0g" "bi-cash-stack" "success" %}</div>
+        <div class="col-sm-6 col-lg-4 mb-3">{% stat_card "средний чек, ₽" totals.average|floatformat:"0g" "bi-receipt" "info" %}</div>
+        <div class="col-sm-6 col-lg-4 mb-3">{% stat_card "клиентов с бронями" clients "bi-people" "warning" %}</div>
+        <div class="col-sm-6 col-lg-4 mb-3">{% stat_card "в автопарке" cars_total|ru_plural:"машина,машины,машин" "bi-car-front" "primary" %}</div>
+        <div class="col-sm-6 col-lg-4 mb-3">{% stat_card "отменено" totals.cancelled|ru_plural:"бронь,брони,броней" "bi-x-circle" "danger" %}</div>
+      </div>
+
+      <!-- Графики Chart.js: данные приходят из views.dashboard через фильтр json_script -->
+      <div class="row">
+        <div class="col-lg-8 mb-4">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <h3 class="h6"><i class="bi bi-bar-chart-line mr-1"></i> Брони и выручка по месяцам</h3>
+              <canvas id="monthlyChart" height="130"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4 mb-4">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <h3 class="h6"><i class="bi bi-pie-chart mr-1"></i> Машины по статусам</h3>
+              <canvas id="carsChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-lg-6 mb-4">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <h3 class="h6"><i class="bi bi-graph-up-arrow mr-1"></i> Выручка по классам</h3>
+              <canvas id="classChart" height="160"></canvas>
+              <p class="small text-muted mt-2 mb-0">
+                Классы: {{ class_chart.labels|join:", " }}  {# Шаблонизатор: фильтр join #}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Загрузка офисов: прогресс-бары Bootstrap, ширина считается тегом widthratio -->
+        <div class="col-lg-6 mb-4">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <h3 class="h6"><i class="bi bi-building mr-1"></i> Выдачи по офисам</h3>
+              {% for office in offices|slice:":8" %}  {# Шаблонизатор: фильтр slice — первые 8 #}
+                <div class="small d-flex justify-content-between">
+                  <span>{{ office.city }}, {{ office.name|truncatechars:28 }}</span>
+                  <span>{{ office.pickups_count|ru_plural:"выдача,выдачи,выдач" }}</span>
+                </div>
+                <div class="progress mb-2" style="height: 8px;">
+                  {# Шаблонизатор: widthratio — доля от максимума в процентах #}
+                  <div class="progress-bar {% if forloop.first %}bg-success{% endif %}"
+                       style="width: {% widthratio office.pickups_count max_pickups 100 %}%"></div>
+                </div>
+              {% empty %}
+                <p class="text-muted mb-0">Офисов нет.</p>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- Топ клиентов: for + forloop.counter, cycle, if/elif/else, фильтры -->
+        <div class="col-lg-6 mb-4">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <h3 class="h6"><i class="bi bi-trophy mr-1"></i> Топ-{{ top_clients|length }} клиентов</h3>
+              {# Шаблонизатор: фильтр length — количество элементов #}
+              <table class="table table-sm mb-0">
+                <thead><tr><th>#</th><th>Клиент</th><th>Поездок</th><th>Оплачено</th><th></th></tr></thead>
+                <tbody>
+                  {% for client in top_clients %}
+                    {# Шаблонизатор: cycle — чередует значения по строкам #}
+                    <tr class="{% cycle '' 'table-light' %}">
+                      <td>{{ forloop.counter }}</td>  {# Шаблонизатор: номер итерации цикла #}
+                      <td>
+                        {{ client.last_name|upper }} {{ client.first_name }}<br>
+                        <span class="text-muted small">{{ client.email|lower }} · {{ client.phone|default:"без телефона" }}</span>
+                      </td>
+                      <td>{{ client.trips }}</td>
+                      <td>{{ client.spent|floatformat:"0g" }} ₽</td>
+                      <td>
+                        {# Шаблонизатор: if / elif / else и forloop.first, forloop.counter #}
+                        {% if forloop.first %}
+                          <i class="bi bi-trophy-fill" style="color: #f5b301;" title="1 место"></i>
+                        {% elif forloop.counter == 2 %}
+                          <i class="bi bi-trophy-fill" style="color: #9e9e9e;" title="2 место"></i>
+                        {% else %}
+                          <i class="bi bi-award" style="color: #b87333;" title="{{ forloop.counter }} место"></i>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% empty %}
+                    <tr><td colspan="5" class="text-muted">Оплаченных броней пока нет.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Последние брони: regroup — группировка по статусу -->
+        <div class="col-lg-6 mb-4">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <h3 class="h6"><i class="bi bi-list-check mr-1"></i> Последние брони по статусам</h3>
+              {% regroup recent by status as status_groups %}
+              {% for group in status_groups %}
+                <p class="mb-1 mt-2">
+                  <span class="badge text-white" style="background: {{ group.grouper.color|default:'#888' }}">{{ group.grouper }}</span>
+                  <span class="small text-muted">{{ group.list|length }}</span>
+                </p>
+                <ul class="list-unstyled small mb-0">
+                  {% for booking in group.list %}
+                    <li>
+                      <a href="{% url 'admin:cars_booking_change' booking.pk %}">{{ booking.booking_number }}</a>
+                      {# Шаблонизатор: url — адрес по имени маршрута #}
+                      · {{ booking.car.model }} · {{ booking.date_start|date:"d.m.Y" }}
+                      · {{ booking.days_count|ru_plural:"сутки,суток,суток" }}
+                      · оплачено: {{ booking.paid|yesno:"да,нет" }}  {# Шаблонизатор: yesno #}
+                      · создана {{ booking.date_created|timesince }} назад  {# Шаблонизатор: timesince #}
+                      · {% firstof booking.user.first_name booking.user.email %}  {# первое непустое #}
+                    </li>
+                  {% endfor %}
+                </ul>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  {# Шаблонизатор: фильтр json_script — безопасно передаёт данные из Python в JavaScript #}
+  {{ monthly|json_script:"monthly-data" }}
+  {{ cars_chart|json_script:"cars-data" }}
+  {{ class_chart|json_script:"class-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+  const read = id => JSON.parse(document.getElementById(id).textContent);
+  const monthly = read('monthly-data');
+  const cars = read('cars-data');
+  const classes = read('class-data');
+  const rub = v => v.toLocaleString('ru-RU') + ' ₽';
+
+  // Столбцы — количество броней, линия — выручка (вторая ось справа)
+  new Chart(document.getElementById('monthlyChart'), {
+    data: {
+      labels: monthly.labels,
+      datasets: [
+        { type: 'bar', label: 'Бронирований', data: monthly.count, backgroundColor: '#1089ff', yAxisID: 'y' },
+        { type: 'line', label: 'Выручка, ₽', data: monthly.revenue, borderColor: '#28a745',
+          backgroundColor: '#28a745', tension: 0.3, yAxisID: 'y1' },
+      ],
+    },
+    options: {
+      scales: {
+        y: { beginAtZero: true, title: { display: true, text: 'брони' } },
+        y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false },
+              ticks: { callback: rub } },
+      },
+      plugins: { tooltip: { callbacks: { label: c => c.dataset.yAxisID === 'y1'
+        ? 'Выручка: ' + rub(c.raw) : 'Бронирований: ' + c.raw } } },
+    },
+  });
+
+  new Chart(document.getElementById('carsChart'), {
+    type: 'doughnut',
+    data: { labels: cars.labels, datasets: [{ data: cars.data, backgroundColor: cars.colors }] },
+    options: { plugins: { legend: { position: 'bottom' } } },
+  });
+
+  new Chart(document.getElementById('classChart'), {
+    type: 'bar',
+    data: { labels: classes.labels, datasets: [{ label: 'Выручка, ₽', data: classes.data,
+      backgroundColor: ['#1089ff', '#6f42c1', '#fd7e14', '#20c997'] }] },
+    options: { indexAxis: 'y', plugins: { legend: { display: false },
+      tooltip: { callbacks: { label: c => rub(c.raw) } } },
+      scales: { x: { ticks: { callback: rub } } } },
+  });
+</script>
+{% endblock %}

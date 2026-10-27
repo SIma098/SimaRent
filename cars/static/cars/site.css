@@ -1,0 +1,41 @@
+/* Свои стили SimaRent поверх шаблона CarRentals */
+
+/* Фото в карточке машины одной высоты: кадрируется, а не растягивается,
+   поэтому текст во всех карточках начинается на одном уровне */
+.listing .listing-img img {
+  width: 100%;
+  height: 210px;
+  object-fit: cover;
+}
+.listing .listing-img > div {
+  height: 210px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Фото внутри карточки, а не над её краем (в шаблоне было margin-top: -40px) */
+.listing .listing-img {
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+/* Карточка — колонка: текст сверху, кнопки прижаты к низу */
+.listing {
+  display: flex;
+  flex-direction: column;
+}
+.listing .listing-contents {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.listing .listing-actions {
+  margin-top: auto;
+  padding-top: 16px;
+}
+/* «Забронировать» и плашка статуса одной высоты */
+.listing .listing-actions .btn-block {
+  padding: 10px 12px;
+  font-size: 14px;
+}

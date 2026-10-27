@@ -21,6 +21,8 @@ urlpatterns = [
     path('contacts/offices/<int:pk>/delete/', views.office_delete, name='office_delete'),
     # личный кабинет
     path('profile/', views.profile, name='profile'),
+    # дашборд со статистикой — только админ
+    path('dashboard/', views.dashboard, name='dashboard'),
     # вход и выход — готовые представления Django, шаблон входа свой
     path('login/', auth_views.LoginView.as_view(
         template_name='cars/login.html', redirect_authenticated_user=True,
