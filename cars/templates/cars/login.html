@@ -1,0 +1,53 @@
+{% extends "cars/base.html" %}
+{% load static %}
+
+{% block title %}Вход — SimaRent{% endblock %}
+
+{% block content %}
+
+  <div class="hero inner-page" style="background-image: url('{% static "carrentals/images/hero_1_a.jpg" %}');">
+    <div class="container">
+      <div class="row align-items-end">
+        <div class="col-lg-5">
+          <div class="intro">
+            <h1><strong>Вход</strong></h1>
+            <div class="custom-breadcrumbs"><a href="{% url 'cars:home' %}">Главная</a> <span class="mx-2">/</span> <strong>Вход</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="site-section">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-lg-5">
+          <!-- форма — стандартная AuthenticationForm: поля username (у нас email) и password -->
+          <form method="post" class="p-4 bg-light">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
+
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>
+            {% endif %}
+
+            <div class="form-group">
+              <label for="{{ form.username.id_for_label }}">Электронная почта</label>
+              <input type="email" name="{{ form.username.html_name }}" id="{{ form.username.id_for_label }}"
+                     value="{{ form.username.value|default:'' }}" class="form-control" required autofocus>
+            </div>
+
+            <div class="form-group">
+              <label for="{{ form.password.id_for_label }}">Пароль</label>
+              <input type="password" name="{{ form.password.html_name }}" id="{{ form.password.id_for_label }}"
+                     class="form-control" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block py-2">Войти</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}

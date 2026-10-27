@@ -31,8 +31,7 @@
           </div>
         </div>
         <div class="row mb-4">
-          {% for office in offices %}
-            {% if office.city == city.name %}
+          {% for office in city.offices.all %}
               <div class="col-lg-4 col-md-6 mb-4">
                 <div class="p-4 bg-light h-100">
                   <h3 class="h5 mb-3">{{ office.name }}</h3>
@@ -47,7 +46,6 @@
                   </p>
                 </div>
               </div>
-            {% endif %}
           {% endfor %}
         </div>
       {% endfor %}
@@ -94,8 +92,12 @@
               <div class="col-md-12">
                 <label for="c-office">Офис</label>
                 <select id="c-office" name="office_id" class="form-control">
-                  {% for office in offices %}
-                    <option value="{{ office.id }}">{{ office.city }} — {{ office.name }}</option>
+                  {% for city in cities %}
+                    <optgroup label="{{ city.name }}">
+                      {% for office in city.offices.all %}
+                        <option value="{{ office.pk }}">{{ office.name }}</option>
+                      {% endfor %}
+                    </optgroup>
                   {% endfor %}
                 </select>
               </div>

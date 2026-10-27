@@ -105,6 +105,11 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 AUTH_USER_MODEL = 'cars.User'
 
+# Куда вести на вход и куда возвращать после входа и выхода
+LOGIN_URL = 'cars:login'
+LOGIN_REDIRECT_URL = 'cars:home'
+LOGOUT_REDIRECT_URL = 'cars:home'
+
 # Форматы выгрузки из админки (django-import-export)
 EXPORT_FORMATS = [XLSX, CSV]
 

@@ -5,8 +5,7 @@
 
 {% block content %}
 
-  <!-- Шапка с формой подбора. Поля формы повторяют поля таблицы bookings:
-       pickup_office_id, date_start, date_end, плюс фильтр по classes -->
+  <!-- Шапка с формой подбора. Числа — из виджета «SimaRent в цифрах» (aggregate) -->
   <div class="hero" style="background-image: url('{% static "carrentals/images/hero_1_a.jpg" %}');">
     <div class="container">
       <div class="row align-items-center justify-content-center">
@@ -16,7 +15,7 @@
             <div class="col-lg-8 intro">
               <h1><strong>Аренда автомобиля</strong> в {{ cities_total }} городах России.</h1>
               <p class="lead text-white mb-0">
-                Автопарк из {{ cars_total }} машин, {{ offices_total }} офисов выдачи.
+                Автопарк из {{ fleet.total }} машин, {{ offices_total }} офисов выдачи.
                 Берите машину там, где удобно, возвращайте в любой другой офис.
               </p>
             </div>
@@ -63,21 +62,89 @@
   </div>
 
 
-  <!-- Как забронировать: шаги повторяют справочник booking_statuses -->
+  <!-- Личный кабинет: блоки зависят от прав пользователя -->
+  {% if user.is_authenticated %}
+    <div class="site-section bg-light">
+      <div class="container">
+        <h2 class="section-heading mb-2"><strong>Здравствуйте, {{ user.first_name|default:user.email }}</strong></h2>
+        <p class="mb-5">Роль: {{ user.role|default:"не назначена" }}</p>
+
+        <div class="row">
+          <!-- Любой вошедший пользователь: свои бронирования -->
+          <div class="{% if perms.cars.view_booking %}col-lg-6{% else %}col-12{% endif %} mb-4">
+            <div class="p-4 bg-white h-100">
+              <h3 class="h5 mb-3">Мои бронирования</h3>
+              {% for booking in my_bookings %}
+                <p class="mb-2">
+                  <strong>{{ booking.booking_number }}</strong> · {{ booking.car.model }}<br>
+                  <span class="text-muted">
+                    {{ booking.date_start|date:"d.m.Y" }} — {{ booking.date_end|date:"d.m.Y" }},
+                    {{ booking.pickup_office.name }}
+                  </span>
+                  <span class="badge text-white ml-1" style="background: {{ booking.status.color|default:'#888' }}">{{ booking.status }}</span>
+                </p>
+              {% empty %}
+                <p class="mb-0 text-muted">Бронирований пока нет.</p>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Менеджер и админ (право cars.view_booking): выдачи на неделю -->
+          {% if perms.cars.view_booking %}
+            <div class="col-lg-6 mb-4">
+              <div class="p-4 bg-white h-100">
+                <h3 class="h5 mb-3">Выдачи на ближайшие 7 дней</h3>
+                {% for booking in upcoming %}
+                  <p class="mb-2">
+                    <strong>{{ booking.date_start|date:"d.m H:i" }}</strong> · {{ booking.car.model }}
+                    · {{ booking.user }}<br>
+                    <span class="text-muted">{{ booking.pickup_office.name }} · {{ booking.status }}</span>
+                  </p>
+                {% empty %}
+                  <p class="mb-0 text-muted">Выдач на неделю нет.</p>
+                {% endfor %}
+                <a href="{% url 'admin:cars_booking_changelist' %}" class="btn btn-primary btn-sm mt-2">Все брони в админке</a>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Только суперюзер: выручка -->
+        {% if user.is_superuser %}
+          <div class="p-4 bg-white">
+            <h3 class="h5 mb-3">Выручка (видно только администратору)</h3>
+            <div class="row mb-3">
+              <div class="col-md-4"><h4 class="text-primary mb-0">{{ revenue.total|default:0|floatformat:"0g" }} ₽</h4><span class="text-muted">оплачено всего</span></div>
+              <div class="col-md-4"><h4 class="text-primary mb-0">{{ revenue.count }}</h4><span class="text-muted">оплаченных броней</span></div>
+              <div class="col-md-4"><h4 class="text-primary mb-0">{{ revenue.average|default:0|floatformat:"0g" }} ₽</h4><span class="text-muted">средний чек</span></div>
+            </div>
+            {% for row in by_status %}
+              <span class="badge text-white mr-2 mb-2 p-2" style="background: {{ row.status__color|default:'#888' }}">
+                {{ row.status__name }}: {{ row.count }} шт. на {{ row.total|floatformat:"0g" }} ₽
+              </span>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+
+  <!-- Как забронировать -->
   <div class="site-section">
     <div class="container">
       <h2 class="section-heading"><strong>Как забронировать</strong></h2>
       <p class="mb-5">Четыре шага — от выбора машины до возврата в офис</p>
 
       <div class="row mb-5">
-        {% for step in booking_steps %}
+        {% for name, description in booking_steps %}
           <div class="col-lg-3 col-md-6 mb-4 mb-lg-0">
             <div class="step h-100">
               <span>{{ forloop.counter }}</span>
               <div class="step-inner h-100">
                 <span class="number text-primary">0{{ forloop.counter }}.</span>
-                <h3>{{ step.name }}</h3>
-                <p>{{ step.description }}</p>
+                <h3>{{ name }}</h3>
+                <p>{{ description }}</p>
               </div>
             </div>
           </div>
@@ -87,7 +154,7 @@
   </div>
 
 
-  <!-- Классы автомобилей — справочник classes -->
+  <!-- Виджет 2 «Классы автомобилей»: classes + cars, annotate(Count, Min) -->
   <div class="site-section bg-light">
     <div class="container">
       <div class="row">
@@ -107,6 +174,10 @@
               <div class="service-1-contents">
                 <h3>{{ car_class.name }}</h3>
                 <p>{{ car_class.description }}</p>
+                <p class="mb-0">
+                  Машин: <strong>{{ car_class.cars_count }}</strong> ·
+                  от <strong>{{ car_class.price_from|floatformat:"0g" }} ₽</strong>/сутки
+                </p>
               </div>
             </div>
           </div>
@@ -116,24 +187,25 @@
   </div>
 
 
-  <!-- Автопарк: карточки собираются из таблицы cars и связанных справочников -->
+  <!-- Виджет 1 «Свободные автомобили»: cars + models + brands + car_photos,
+       filter / exclude / order_by / срез -->
   <div class="site-section">
     <div class="container">
       <div class="row">
         <div class="col-lg-7">
-          <h2 class="section-heading"><strong>Доступные автомобили</strong></h2>
-          <p class="mb-5">Часть автопарка — полный список в каталоге</p>
+          <h2 class="section-heading"><strong>Свободные автомобили</strong></h2>
+          <p class="mb-5">Самые доступные из тех, что можно забрать прямо сейчас</p>
         </div>
       </div>
 
       <div class="row">
-        {% for car in cars %}
+        {% for car in free_cars %}
           <div class="col-md-6 col-lg-4 mb-4">
             {% include "cars/includes/car_card.html" %}
           </div>
         {% empty %}
           <div class="col-12">
-            <p>Автомобилей пока нет.</p>
+            <p>Свободных автомобилей сейчас нет.</p>
           </div>
         {% endfor %}
       </div>
@@ -147,8 +219,48 @@
   </div>
 
 
-  <!-- Опции — справочник features, связан с cars через car_features -->
+  <!-- Виджет 3 «SimaRent в цифрах»: cars + bookings, aggregate -->
   <div class="site-section bg-light">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-7">
+          <h2 class="section-heading"><strong>SimaRent в цифрах</strong></h2>
+          <p class="mb-5">Считается по базе при каждом открытии страницы</p>
+        </div>
+      </div>
+
+      <div class="row text-center">
+        <div class="col-6 col-lg-2 mb-4">
+          <h2 class="display-4 text-primary mb-0"><strong>{{ fleet.total }}</strong></h2>
+          <p class="mb-0">машин в автопарке</p>
+        </div>
+        <div class="col-6 col-lg-2 mb-4">
+          <h2 class="display-4 text-primary mb-0"><strong>{{ fleet.free }}</strong></h2>
+          <p class="mb-0">свободно сейчас</p>
+        </div>
+        <div class="col-6 col-lg-2 mb-4">
+          <h2 class="display-4 text-primary mb-0"><strong>{{ fleet.rented }}</strong></h2>
+          <p class="mb-0">в аренде</p>
+        </div>
+        <div class="col-6 col-lg-2 mb-4">
+          <h2 class="text-primary mb-0 mt-3"><strong>{{ fleet.price_min|floatformat:"0g" }} ₽</strong></h2>
+          <p class="mb-0">минимальная цена за сутки</p>
+        </div>
+        <div class="col-6 col-lg-2 mb-4">
+          <h2 class="text-primary mb-0 mt-3"><strong>{{ fleet.price_avg|floatformat:"0g" }} ₽</strong></h2>
+          <p class="mb-0">средняя цена за сутки</p>
+        </div>
+        <div class="col-6 col-lg-2 mb-4">
+          <h2 class="display-4 text-primary mb-0"><strong>{{ trips.count }}</strong></h2>
+          <p class="mb-0">завершённых поездок на {{ trips.days|default:0 }} сут.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Опции — features, annotate: на скольких машинах есть -->
+  <div class="site-section">
     <div class="container">
       <div class="row">
         <div class="col-lg-7">
@@ -166,6 +278,7 @@
               </span>
               <div class="service-1-contents">
                 <h3>{{ feature.name }}</h3>
+                <p class="mb-0">машин с опцией: {{ feature.cars_count }}</p>
               </div>
             </div>
           </div>
@@ -175,8 +288,8 @@
   </div>
 
 
-  <!-- Офисы — таблицы offices и cities. Показываем по три, остальные листаются -->
-  <div class="site-section">
+  <!-- Офисы — offices + cities, annotate: машин в офисе сейчас -->
+  <div class="site-section bg-light">
     <div class="container">
       <div class="row align-items-end mb-5">
         <div class="col-lg-8">
@@ -202,12 +315,13 @@
 
       <div class="owl-carousel offices-carousel">
         {% for office in offices %}
-          <div class="p-4 bg-light">
+          <div class="p-4 bg-white">
             <h3 class="h5 mb-3">{{ office.city }}</h3>
             <p class="mb-1"><strong>{{ office.name }}</strong></p>
             <p class="mb-1">{{ office.address }}</p>
             <p class="mb-1">{{ office.phone }}</p>
-            <p class="mb-0 text-muted">Часы работы: {{ office.work_hours }}</p>
+            <p class="mb-1 text-muted">Часы работы: {{ office.work_hours }}</p>
+            <p class="mb-0">Машин в офисе сейчас: <strong>{{ office.cars_now_count }}</strong></p>
           </div>
         {% endfor %}
       </div>

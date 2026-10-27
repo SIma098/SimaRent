@@ -7,17 +7,23 @@
 <div class="listing d-block h-100">
 
   <div class="listing-img">
-    <img src="{% static car.photos.0 %}" alt="{{ car.brand }} {{ car.model }}" class="img-fluid">
+    {% with photo=car.photos.all|first %}
+      {% if photo %}
+        <img src="{{ photo.file_path.url }}" alt="{{ photo.alt_text|default:car.model }}" class="img-fluid">
+      {% else %}
+        <div class="bg-light text-muted text-center py-5">Фото скоро появится</div>
+      {% endif %}
+    {% endwith %}
   </div>
 
   <div class="listing-contents">
-    <h3>{{ car.brand }} {{ car.model }}</h3>
+    <h3>{{ car.model }}</h3>
     <p class="text-muted mb-2">
-      {{ car.class_name }} · {{ car.body_type }} · {{ car.year }} г.
+      {{ car.car_class }} · {{ car.body_type }} · {{ car.year }} г.
     </p>
 
     <div class="rent-price">
-      <strong>{{ car.price_day }} ₽</strong><span class="mx-1">/</span>сутки
+      <strong>{{ car.price_day|floatformat:"0g" }} ₽</strong><span class="mx-1">/</span>сутки
     </div>
 
     <div class="d-block d-md-flex mb-3 border-bottom pb-3">
@@ -36,18 +42,22 @@
     </div>
 
     <div>
-      <p class="mb-3">{{ car.description }}</p>
       <p class="mb-1">
-        {{ car.transmission_type }}, {{ car.fuel_type }},
+        {{ car.transmission_type }}, {{ car.fuel_type|lower }},
         {{ car.engine_volume }} л / {{ car.horsepower }} л.с.
       </p>
       <p class="mb-1">Расход {{ car.fuel_consumption }} л на 100 км</p>
       <p class="mb-3">
-        <span class="icon-map-marker mr-1"></span>{{ car.city }}, {{ car.office }}
+        <span class="icon-map-marker mr-1"></span>
+        {% if car.current_office %}{{ car.current_office }}{% else %}{{ car.get_status_display }}{% endif %}
       </p>
-      <p class="mb-0">Залог {{ car.deposit }} ₽</p>
+      <p class="mb-0">Залог {{ car.deposit|floatformat:"0g" }} ₽</p>
       <p class="mt-3 mb-0">
-        <a href="#" class="btn btn-primary btn-sm">Забронировать</a>
+        {% if car.status == 'available' %}
+          <a href="#" class="btn btn-primary btn-sm">Забронировать</a>
+        {% else %}
+          <span class="btn btn-secondary btn-sm disabled">{{ car.get_status_display }}</span>
+        {% endif %}
       </p>
     </div>
   </div>

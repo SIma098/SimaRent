@@ -61,6 +61,23 @@
                   <li><a href="{% url 'cars:listing' %}" class="nav-link">Автомобили</a></li>
                   <li><a href="{% url 'cars:about' %}" class="nav-link">О компании</a></li>
                   <li><a href="{% url 'cars:contact' %}" class="nav-link">Контакты</a></li>
+                  {% if user.is_authenticated %}
+                    {% if user.is_staff %}
+                      <li><a href="{% url 'admin:index' %}" class="nav-link">Админка</a></li>
+                    {% endif %}
+                    <li>
+                      <!-- выход в Django 5 — только POST-запросом, поэтому форма -->
+                      <form action="{% url 'cars:logout' %}" method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" title="{{ user.email }}"
+                                style="margin: 0 15px; padding: 20px 0; border: 0; background: none; font: inherit; color: rgba(0, 0, 0, 0.7); cursor: pointer;">
+                          Выйти ({{ user.first_name|default:user.email }})
+                        </button>
+                      </form>
+                    </li>
+                  {% else %}
+                    <li><a href="{% url 'cars:login' %}" class="nav-link">Войти</a></li>
+                  {% endif %}
                 </ul>
               </nav>
             </div>
